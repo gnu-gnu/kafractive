@@ -1,4 +1,4 @@
-package com.gnu.kafractive.admin;
+package com.gnu.kafractive.client.admin;
 
 import com.gnu.kafractive.config.ConnectEvent;
 import org.apache.kafka.clients.admin.AdminClient;
@@ -26,7 +26,7 @@ public class AdminConnector {
         this.adminUtils = adminUtils;
     }
 
-    @ShellMethod(value="connect Brokers", key={"connect"})
+    @ShellMethod(value="connect Brokers with admin client", key={"admin-connect"})
     public boolean connect(@ShellOption(defaultValue = "") String bootstrapServers){
         boolean argsNotSet = "".equals(bootstrapServers);
         boolean envNotSet = "-".equals(defaultServer);
@@ -43,20 +43,24 @@ public class AdminConnector {
             props.put(AdminClientConfig.BOOTSTRAP_SERVERS_CONFIG, bootstrapServers);
             adminUtils.setClient(AdminClient.create(props));
             adminUtils.setConnection(true);
-            applicationEventPublisher.publishEvent(new ConnectEvent(this, true));
+            applicationEventPublisher.publishEvent(new ConnectEvent(this, "admin", true));
         } catch(TimeoutException e){
             adminUtils.setConnection(false);
-            applicationEventPublisher.publishEvent(new ConnectEvent(this, false));
+            applicationEventPublisher.publishEvent(new ConnectEvent(this, "admin",false));
 
         }
         return adminUtils.isConnection();
     }
-    @ShellMethod(value="disconnect", key={"disconnect", "close"})
-    public void close(){
-        System.out.println("disconnected");
-        adminUtils.getClient().close();
-        adminUtils.setConnection(false);
-        applicationEventPublisher.publishEvent(new ConnectEvent(this, false));
 
+    @ShellMethod(value="disconnect", key={"disconnect", "admin-close"})
+    public void close(){
+        if(adminUtils.isConnection()){
+            System.out.println("disconnected");
+            adminUtils.getClient().close();
+            adminUtils.setConnection(false);
+            applicationEventPublisher.publishEvent(new ConnectEvent(this, "admin",false));
+        } else {
+            System.out.println("already disconnected");
+        }
     }
 }

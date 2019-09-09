@@ -1,8 +1,10 @@
-package com.gnu.kafractive.admin;
+package com.gnu.kafractive.client.admin;
 
 import org.apache.kafka.clients.admin.*;
+import org.apache.kafka.common.ConsumerGroupState;
 import org.apache.kafka.common.KafkaFuture;
 import org.apache.kafka.common.Node;
+import org.apache.kafka.common.TopicPartition;
 import org.apache.kafka.common.config.ConfigResource;
 import org.springframework.shell.Availability;
 import org.springframework.shell.standard.ShellComponent;
@@ -12,9 +14,6 @@ import org.springframework.shell.standard.ShellOption;
 
 import java.util.*;
 import java.util.concurrent.ExecutionException;
-import java.util.function.BiConsumer;
-import java.util.function.BiFunction;
-import java.util.function.Function;
 import java.util.stream.Collectors;
 
 @ShellComponent
@@ -87,6 +86,45 @@ public class AdminUtils {
         System.out.printf("trying to delete topic %s\n", topicName);
         return client.deleteTopics(Arrays.asList(topicName)).all().get();
     }
+    @ShellMethod(value="show consumer group information", key={"show-consumer-group-list"})
+    public void showConsumerGroup() throws ExecutionException, InterruptedException {
+        Collection<ConsumerGroupListing> consumerGroupListings = client.listConsumerGroups().all().get();
+        System.out.printf("Cluster has %d consumer groups\n", consumerGroupListings.size());
+        consumerGroupListings.forEach(value -> {
+                System.out.printf("group id : %s / simple group : %s\n",value.groupId(), value.isSimpleConsumerGroup());
+        });
+    }
+    @ShellMethod(value="show specific consumer group's detail information", key={"show-consumer-group-info"})
+    public void showConsumerGroupInfo(String groupId) throws ExecutionException, InterruptedException {
+        Map<String, ConsumerGroupDescription> groupDescMap = client.describeConsumerGroups(Arrays.asList(groupId)).all().get();
+        for (Map.Entry<String, ConsumerGroupDescription> consumerGroupEntry : groupDescMap.entrySet()) {
+            ConsumerGroupDescription groupDesc = consumerGroupEntry.getValue();
+            String groupIdValue = groupDesc.groupId();
+            int coordinatorId = groupDesc.coordinator().id();
+            String partitionAssignor = groupDesc.partitionAssignor();
+            String groupStateName = groupDesc.state().name();
+            System.out.println("- Group Info");
+            System.out.printf("\tgroupId(%s)\tstate(%s)\tcoordinatorId(%d)\tpartitionAssignor(%s)\n", groupIdValue, groupStateName, coordinatorId, partitionAssignor);
+            System.out.println("- Member info");
+            groupDesc.members().forEach(member -> {
+                String memberHost = member.host();
+                String clientId = member.clientId();
+                String consumerId = member.consumerId();
+                System.out.printf("\tmember-host(%s)\tclientId(%s)\tconsumerId(%s)\n",memberHost,clientId,consumerId);
+                MemberAssignment assignment = member.assignment();
+                System.out.println("- Topic-Partition information");
+                for (TopicPartition topicPartition : assignment.topicPartitions()) {
+                    String topic = topicPartition.topic();
+                    int partition = topicPartition.partition();
+                    System.out.printf("\t%s(%d)", topic, partition);
+                }
+                System.out.println();
+            });
+
+
+        }
+    }
+
 
     private String getBrokerMetricByMetricName(String brokerId, String configPropertyName) throws ExecutionException, InterruptedException, NoSuchFieldException {
         ConfigResource resource = new ConfigResource(ConfigResource.Type.BROKER, brokerId);
