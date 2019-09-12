@@ -30,8 +30,20 @@ public class ConsumerUtils {
         this.runningThread = runningThread;
     }
 
-    @ShellMethod(value = "connect consumer and broker", key = {"consumer-connect", "cc"})
-    public boolean connect(String topicName,
+    /**
+     *
+     * connect brokers with consumer client
+     *
+     * @param topic (mandatory) topics name
+     * @param clientId consumer client Id
+     * @param bootstrapServers server list, it can be provided with user's input args or java -jar execute args (java -jar kafractive.jar [filename])
+     * @param groupId consumer group id
+     * @param duration polling interval (milliseconds)
+     * @param matching if set to true, consuming all topics that contains topic name (set to false will consume extactly same name)
+     * @return
+     */
+    @ShellMethod(value = "connect between consumer and broker", key = {"consumer-connect", "cc"})
+    public boolean connect(String topic,
                            @ShellOption(defaultValue = "") String clientId,
                            @ShellOption(defaultValue = "") String bootstrapServers,
                            @ShellOption(defaultValue = "") String groupId,
@@ -61,7 +73,7 @@ public class ConsumerUtils {
                 props.put(ConsumerConfig.CLIENT_ID_CONFIG, clientId);
             }
             boolean flag = matching.equals("true") ? true : false;
-            runningThread.init(applicationEventPublisher, topicName, props, duration, flag).consume();
+            runningThread.init(applicationEventPublisher, topic, props, duration, flag).consume();
             return isConsumerSet = true;
         } catch (TimeoutException e) {
             e.printStackTrace();
@@ -69,7 +81,7 @@ public class ConsumerUtils {
         return isConsumerSet = false;
     }
 
-    @ShellMethod(value = "close consumer", key = {"consumer-close", "ccl"})
+    @ShellMethod(value = "close consumer", key = {"consumer-close", "cclose"})
     @ShellMethodAvailability("availabilityConsumerClose")
     public void close() {
         System.out.println("stop consumer");

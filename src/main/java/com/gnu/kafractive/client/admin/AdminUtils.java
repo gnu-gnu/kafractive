@@ -23,24 +23,74 @@ public class AdminUtils {
 
     private AdminClient client;
 
+    /**
+     *
+     * Show controller information
+     * Controller is a node responsible for managing partitions and replica's status.
+     *
+     * @return Controller node (host, id, rack)
+     * @throws ExecutionException
+     * @throws InterruptedException
+     */
     @ShellMethod(value="get controller info", key={"show-controller", "sc"})
     public Node showControllerInfo() throws ExecutionException, InterruptedException {
         return client.describeCluster().controller().get();
     }
+
+    /**
+     *
+     * Show all nodes list
+     *
+     * @return Collection of nodes
+     * @throws ExecutionException
+     * @throws InterruptedException
+     */
     @ShellMethod(value="show all nodes", key={"show-all-nodes", "san"})
     public Collection<Node> showAllNodesList() throws ExecutionException, InterruptedException {
         return client.describeCluster().nodes().get();
     }
+
+    /**
+     *
+     * show specific broker's whole information
+     * [STATIC_BROKER_CONFIG] is set in your configuration file.
+     * [DEFAULT_CONFIG] is kafka's default value.
+     *
+     * @param brokerId broker'id. it can be specified in server.properties or like files.
+     * @param filter filtering character, if set, results only contain this string will be shown.
+     * @throws ExecutionException
+     * @throws InterruptedException
+     */
     @ShellMethod(value="show specific node's config", key={"show-node-config", "snc"})
     public void showNodeConfig(String brokerId, @ShellOption(defaultValue="") String filter) throws ExecutionException, InterruptedException {
         ConfigResource resource = new ConfigResource(ConfigResource.Type.BROKER, brokerId);
         showConfigInfo(resource, filter);
     }
+
+    /**
+     *
+     *  show specific topic's whole information
+     * [STATIC_BROKER_CONFIG] is set in your configuration file.
+     * [DEFAULT_CONFIG] is kafka's default value.
+     *
+     * @param topicName topic's name
+     * @param filter filtering character, if set, results only contain this string will be shown.
+     * @throws ExecutionException
+     * @throws InterruptedException
+     */
     @ShellMethod(value="show specific topic's config", key={"show-topic-config", "stc"})
     public void showTopicConfigInfoByName(String topicName, @ShellOption(defaultValue="",help = "if config key or value contains this filter string, it will be shown") String filter) throws ExecutionException, InterruptedException {
         ConfigResource resource = new ConfigResource((ConfigResource.Type.TOPIC), topicName);
         showConfigInfo(resource, filter);
     }
+
+    /**
+     *
+     * show all topics information (name, partitons, replications, partition leader, current ISR(in-sync replicas)
+     *
+     * @throws ExecutionException
+     * @throws InterruptedException
+     */
     @ShellMethod(value="show all topic's information in cluster", key={"show-all-topics", "sat"})
     public void showAllTopicsName() throws ExecutionException, InterruptedException {
         Set<String> topicNames = client.listTopics().names().get();
@@ -51,19 +101,41 @@ public class AdminUtils {
             retrieveTopic(topicDescription);
         }
     }
+
+    /**
+     *
+     * show specific topic's information (name, partitons, replications, partition leader, current ISR(in-sync replicas) by name
+     *
+     * @param topic
+     * @throws ExecutionException
+     * @throws InterruptedException
+     */
     @ShellMethod(value="show specific topic's information", key={"show-topic", "st"})
-    public void showTopicInfoByName(String topicName) throws ExecutionException, InterruptedException {
+    public void showTopicInfoByName(String topic) throws ExecutionException, InterruptedException {
         TopicDescription topicDescription = null;
-        for (Map.Entry<String, TopicDescription> topicDescEntry : client.describeTopics(Arrays.asList(topicName)).all().get().entrySet()) {
+        for (Map.Entry<String, TopicDescription> topicDescEntry : client.describeTopics(Arrays.asList(topic)).all().get().entrySet()) {
             topicDescription = topicDescEntry.getValue();
             System.out.printf("topic name : %s\n", topicDescription.name());
             retrieveTopic(topicDescription);
         }
     }
+
+    /**
+     *
+     * create topic
+     *
+     * @param topic topic will be created with this name
+     * @param partitions topic's message splits into number of partitons
+     * @param replicationFactor each partition duplicated with number of replication factor
+     * @return
+     * @throws ExecutionException
+     * @throws InterruptedException
+     * @throws NoSuchFieldException
+     */
     @ShellMethod(value="create topic by name", key={"create-topic", "ct"})
-    public Void createTopic(String topicName,
+    public Void createTopic(String topic,
                             @ShellOption(defaultValue = "-1", help = "if not set, use broker default") String partitions,
-                            @ShellOption(defaultValue = "-1", help = "if not set, use broker default") String replicas)
+                            @ShellOption(defaultValue = "-1", help = "if not set, use broker default", value = "replication-factor") String replicationFactor)
                                             throws ExecutionException, InterruptedException, NoSuchFieldException {
         String firstNodeId = String.valueOf(showAllNodesList().stream().collect(Collectors.toList()).get(0).id());
         int partitionNum;
@@ -73,28 +145,53 @@ public class AdminUtils {
         } else {
             partitionNum = Integer.parseInt(partitions);
         }
-        if("-1".equals(replicas)){
+        if("-1".equals(replicationFactor)){
             replicationNum = (short)Integer.parseInt(getBrokerMetricByMetricName(firstNodeId, "default.replication.factor"));
         } else {
-            replicationNum = (short)Integer.parseInt(replicas);
+            replicationNum = (short)Integer.parseInt(replicationFactor);
         }
-        System.out.printf("trying to create topic %s with partition %d replication %d\n", topicName, partitionNum, replicationNum);
-        CreateTopicsResult result = client.createTopics(Arrays.asList(new NewTopic(topicName, partitionNum, replicationNum)));
+        System.out.printf("trying to create topic %s with partition %d replication %d\n", topic, partitionNum, replicationNum);
+        CreateTopicsResult result = client.createTopics(Arrays.asList(new NewTopic(topic, partitionNum, replicationNum)));
         return result.all().get();
     }
+
+    /**
+     *
+     * delete topic by name
+     *
+     * @param topic
+     * @return
+     * @throws ExecutionException
+     * @throws InterruptedException
+     */
     @ShellMethod(value="delete topic by name", key={"delete-topic", "dt"})
-    public Void deleteTopic(String topicName) throws ExecutionException, InterruptedException {
-        System.out.printf("trying to delete topic %s\n", topicName);
-        return client.deleteTopics(Arrays.asList(topicName)).all().get();
+    public Void deleteTopic(String topic) throws ExecutionException, InterruptedException {
+        System.out.printf("trying to delete topic %s\n", topic);
+        return client.deleteTopics(Arrays.asList(topic)).all().get();
     }
-    @ShellMethod(value="show consumer group information", key={"show-consumer-group-list", "scgl"})
-    public void showConsumerGroup() throws ExecutionException, InterruptedException {
+
+    /**
+     *
+     * show consumer group's list in this cluster
+     *
+     * @throws ExecutionException
+     * @throws InterruptedException
+     */
+    @ShellMethod(value="show consumer group list", key={"show-consumer-group-list", "scgl"})
+    public void showconsumergroupList() throws ExecutionException, InterruptedException {
         Collection<ConsumerGroupListing> consumerGroupListings = client.listConsumerGroups().all().get();
         System.out.printf("Cluster has %d consumer groups\n", consumerGroupListings.size());
         consumerGroupListings.forEach(value -> {
                 System.out.printf("group id : %s / simple group : %s\n",value.groupId(), value.isSimpleConsumerGroup());
         });
     }
+
+    /**
+     *
+     * @param groupId consumer group's id. you can see at {@link AdminUtils#showconsumergroupList}
+     * @throws ExecutionException
+     * @throws InterruptedException
+     */
     @ShellMethod(value="show specific consumer group's detail information", key={"show-consumer-group-info", "scgi"})
     public void showConsumerGroupInfo(String groupId) throws ExecutionException, InterruptedException {
         Map<String, ConsumerGroupDescription> groupDescMap = client.describeConsumerGroups(Arrays.asList(groupId)).all().get();

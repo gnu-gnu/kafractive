@@ -24,6 +24,21 @@ public class KafractiveMain {
         SpringApplication.run(KafractiveMain.class, args);
     }
 
+    /**
+     *
+     * example of server.list
+     * <pre><i><b>
+     * #server list
+     * 192.168.0.101:9092
+     * 192.168.0.102:9092
+     * 192.168.0.103:9092
+     * </b></i></pre>
+     *
+     * 3 of brokers above will be used in connection establishing.
+     *
+     * @param args
+     * @throws IOException
+     */
     private static void serverListFromArgs(String[] args) throws IOException {
         if (args.length > 0){
             List<String> list = new ArrayList<>();

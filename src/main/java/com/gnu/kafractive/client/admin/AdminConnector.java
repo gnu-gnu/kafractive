@@ -26,7 +26,14 @@ public class AdminConnector {
         this.adminUtils = adminUtils;
     }
 
-    @ShellMethod(value="connect Brokers with admin client", key={"admin-connect"})
+    /**
+     *
+     * connect brokers with AdminClient
+     *
+     * @param bootstrapServers server list, it can be provided with user's input args or java -jar execute args (java -jar kafractive.jar [filename])
+     * @return true, if success.
+     */
+    @ShellMethod(value="connect Brokers with admin client", key={"admin-connect", "ac"})
     public boolean connect(@ShellOption(defaultValue = "") String bootstrapServers){
         if(connectionStatus.get(ADMIN_MODE)){
             System.out.println("AdminClient connection is currently established, disconnect first");
@@ -57,7 +64,7 @@ public class AdminConnector {
         return connectionStatus.get(ADMIN_MODE);
     }
 
-    @ShellMethod(value="disconnect", key={"disconnect", "admin-close"})
+    @ShellMethod(value="disconnect", key={"admin-close", "aclose"})
     public void close(){
         if(connectionStatus.get(ADMIN_MODE)){
             System.out.println("disconnected");
