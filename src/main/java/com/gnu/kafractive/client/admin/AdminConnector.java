@@ -13,6 +13,9 @@ import org.springframework.shell.standard.ShellOption;
 
 import java.util.Properties;
 
+import static com.gnu.kafractive.config.CommonProperties.ADMIN_MODE;
+import static com.gnu.kafractive.config.CommonProperties.connectionStatus;
+
 @ShellComponent
 public class AdminConnector {
     private ApplicationEventPublisher applicationEventPublisher;
@@ -25,10 +28,15 @@ public class AdminConnector {
 
     @ShellMethod(value="connect Brokers with admin client", key={"admin-connect"})
     public boolean connect(@ShellOption(defaultValue = "") String bootstrapServers){
+        if(connectionStatus.get(ADMIN_MODE)){
+            System.out.println("AdminClient connection is currently established, disconnect first");
+            return false;
+        }
+
         boolean userInputServers = !"".equals(bootstrapServers);
         boolean argsInputServers = !"-".equals(CommonProperties.bootstrapServers);
         if(userInputServers){
-            bootstrapServers = bootstrapServers;
+            // PASS
         } else if(argsInputServers){
             bootstrapServers = CommonProperties.bootstrapServers;
         } else {
@@ -39,23 +47,23 @@ public class AdminConnector {
             Properties props = new Properties();
             props.put(AdminClientConfig.BOOTSTRAP_SERVERS_CONFIG, bootstrapServers);
             adminUtils.setClient(AdminClient.create(props));
-            adminUtils.setConnection(true);
-            applicationEventPublisher.publishEvent(new ConnectEvent(this, "admin", true));
+            connectionStatus.put(ADMIN_MODE,true);
+            applicationEventPublisher.publishEvent(new ConnectEvent(this, ADMIN_MODE, true));
         } catch(TimeoutException e){
-            adminUtils.setConnection(false);
-            applicationEventPublisher.publishEvent(new ConnectEvent(this, "admin",false));
+            connectionStatus.put(ADMIN_MODE,false);
+            applicationEventPublisher.publishEvent(new ConnectEvent(this, ADMIN_MODE,false));
 
         }
-        return adminUtils.isConnection();
+        return connectionStatus.get(ADMIN_MODE);
     }
 
     @ShellMethod(value="disconnect", key={"disconnect", "admin-close"})
     public void close(){
-        if(adminUtils.isConnection()){
+        if(connectionStatus.get(ADMIN_MODE)){
             System.out.println("disconnected");
             adminUtils.getClient().close();
-            adminUtils.setConnection(false);
-            applicationEventPublisher.publishEvent(new ConnectEvent(this, "admin",false));
+            connectionStatus.put(ADMIN_MODE, false);
+            applicationEventPublisher.publishEvent(new ConnectEvent(this, ADMIN_MODE,false));
         } else {
             System.out.println("already disconnected");
         }

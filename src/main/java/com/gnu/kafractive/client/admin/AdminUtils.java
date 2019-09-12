@@ -1,7 +1,6 @@
 package com.gnu.kafractive.client.admin;
 
 import org.apache.kafka.clients.admin.*;
-import org.apache.kafka.common.ConsumerGroupState;
 import org.apache.kafka.common.KafkaFuture;
 import org.apache.kafka.common.Node;
 import org.apache.kafka.common.TopicPartition;
@@ -16,31 +15,33 @@ import java.util.*;
 import java.util.concurrent.ExecutionException;
 import java.util.stream.Collectors;
 
+import static com.gnu.kafractive.config.CommonProperties.ADMIN_MODE;
+import static com.gnu.kafractive.config.CommonProperties.connectionStatus;
+
 @ShellComponent
 public class AdminUtils {
 
     private AdminClient client;
-    private boolean connection = false;
 
-    @ShellMethod(value="get controller info", key={"show-controller"})
+    @ShellMethod(value="get controller info", key={"show-controller", "sc"})
     public Node showControllerInfo() throws ExecutionException, InterruptedException {
         return client.describeCluster().controller().get();
     }
-    @ShellMethod(value="show all nodes", key={"show-all-nodes"})
+    @ShellMethod(value="show all nodes", key={"show-all-nodes", "san"})
     public Collection<Node> showAllNodesList() throws ExecutionException, InterruptedException {
         return client.describeCluster().nodes().get();
     }
-    @ShellMethod(value="show specific node's config", key={"show-node-config"})
+    @ShellMethod(value="show specific node's config", key={"show-node-config", "snc"})
     public void showNodeConfig(String brokerId, @ShellOption(defaultValue="") String filter) throws ExecutionException, InterruptedException {
         ConfigResource resource = new ConfigResource(ConfigResource.Type.BROKER, brokerId);
         showConfigInfo(resource, filter);
     }
-    @ShellMethod(value="show specific topic's config", key={"show-topic-config"})
+    @ShellMethod(value="show specific topic's config", key={"show-topic-config", "stc"})
     public void showTopicConfigInfoByName(String topicName, @ShellOption(defaultValue="",help = "if config key or value contains this filter string, it will be shown") String filter) throws ExecutionException, InterruptedException {
         ConfigResource resource = new ConfigResource((ConfigResource.Type.TOPIC), topicName);
         showConfigInfo(resource, filter);
     }
-    @ShellMethod(value="show all topic's information in cluster", key={"show-all-topics"})
+    @ShellMethod(value="show all topic's information in cluster", key={"show-all-topics", "sat"})
     public void showAllTopicsName() throws ExecutionException, InterruptedException {
         Set<String> topicNames = client.listTopics().names().get();
         TopicDescription topicDescription = null;
@@ -50,7 +51,7 @@ public class AdminUtils {
             retrieveTopic(topicDescription);
         }
     }
-    @ShellMethod(value="show specific topic's information", key={"show-topic"})
+    @ShellMethod(value="show specific topic's information", key={"show-topic", "st"})
     public void showTopicInfoByName(String topicName) throws ExecutionException, InterruptedException {
         TopicDescription topicDescription = null;
         for (Map.Entry<String, TopicDescription> topicDescEntry : client.describeTopics(Arrays.asList(topicName)).all().get().entrySet()) {
@@ -59,7 +60,7 @@ public class AdminUtils {
             retrieveTopic(topicDescription);
         }
     }
-    @ShellMethod(value="create topic by name", key={"create-topic"})
+    @ShellMethod(value="create topic by name", key={"create-topic", "ct"})
     public Void createTopic(String topicName,
                             @ShellOption(defaultValue = "-1", help = "if not set, use broker default") String partitions,
                             @ShellOption(defaultValue = "-1", help = "if not set, use broker default") String replicas)
@@ -81,12 +82,12 @@ public class AdminUtils {
         CreateTopicsResult result = client.createTopics(Arrays.asList(new NewTopic(topicName, partitionNum, replicationNum)));
         return result.all().get();
     }
-    @ShellMethod(value="delete topic by name", key={"delete-topic"})
+    @ShellMethod(value="delete topic by name", key={"delete-topic", "dt"})
     public Void deleteTopic(String topicName) throws ExecutionException, InterruptedException {
         System.out.printf("trying to delete topic %s\n", topicName);
         return client.deleteTopics(Arrays.asList(topicName)).all().get();
     }
-    @ShellMethod(value="show consumer group information", key={"show-consumer-group-list"})
+    @ShellMethod(value="show consumer group information", key={"show-consumer-group-list", "scgl"})
     public void showConsumerGroup() throws ExecutionException, InterruptedException {
         Collection<ConsumerGroupListing> consumerGroupListings = client.listConsumerGroups().all().get();
         System.out.printf("Cluster has %d consumer groups\n", consumerGroupListings.size());
@@ -94,7 +95,7 @@ public class AdminUtils {
                 System.out.printf("group id : %s / simple group : %s\n",value.groupId(), value.isSimpleConsumerGroup());
         });
     }
-    @ShellMethod(value="show specific consumer group's detail information", key={"show-consumer-group-info"})
+    @ShellMethod(value="show specific consumer group's detail information", key={"show-consumer-group-info", "scgi"})
     public void showConsumerGroupInfo(String groupId) throws ExecutionException, InterruptedException {
         Map<String, ConsumerGroupDescription> groupDescMap = client.describeConsumerGroups(Arrays.asList(groupId)).all().get();
         for (Map.Entry<String, ConsumerGroupDescription> consumerGroupEntry : groupDescMap.entrySet()) {
@@ -165,14 +166,6 @@ public class AdminUtils {
         }
     }
 
-    public boolean isConnection() {
-        return connection;
-    }
-
-    public void setConnection(boolean connection) {
-        this.connection = connection;
-    }
-
     public AdminClient getClient() {
         return client;
     }
@@ -183,6 +176,6 @@ public class AdminUtils {
 
     @ShellMethodAvailability
     public Availability isAvailable(){
-        return connection ? Availability.available() : Availability.unavailable("not connected, use 'connect'");
+        return connectionStatus.get(ADMIN_MODE) ? Availability.available() : Availability.unavailable("not connected, use 'connect'");
     }
 }
