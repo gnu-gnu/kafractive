@@ -1,5 +1,6 @@
 package com.gnu.kafractive.client.consumer;
 
+import com.gnu.kafractive.config.CommonProperties;
 import com.gnu.kafractive.config.ConnectEvent;
 import org.apache.kafka.clients.consumer.ConsumerConfig;
 import org.apache.kafka.clients.consumer.ConsumerRecords;
@@ -13,17 +14,16 @@ import org.springframework.shell.standard.ShellComponent;
 import org.springframework.shell.standard.ShellMethod;
 import org.springframework.shell.standard.ShellMethodAvailability;
 import org.springframework.shell.standard.ShellOption;
-import org.springframework.stereotype.Component;
 
 import java.time.Duration;
 import java.util.Properties;
 import java.util.regex.Pattern;
 
+import static com.gnu.kafractive.config.CommonProperties.bootstrapServers;
+
+
 @ShellComponent
 public class ConsumerConnector {
-    @Value(value = "${bootstrap.server:-}")
-    private String defaultServer;
-
     private ApplicationEventPublisher applicationEventPublisher;
 
     private KafkaConsumer<String, String> consumer = null;
@@ -37,16 +37,14 @@ public class ConsumerConnector {
     }
 
     @ShellMethod(value = "connect consumer and broker", key = {"consumer-connect"})
-    public boolean connect(String bootstrapServers, String topicName, @ShellOption(defaultValue = "") String clientId, @ShellOption(defaultValue = "") String groupId) {
-        boolean argsNotSet = "".equals(bootstrapServers);
-        boolean envNotSet = "-".equals(defaultServer);
-
-
-        if (!argsNotSet) {
+    public boolean connect(String topicName, @ShellOption(defaultValue = "") String clientId, @ShellOption(defaultValue = "") String bootstrapServers, @ShellOption(defaultValue = "") String groupId) {
+        boolean userInputServers = !"".equals(bootstrapServers);
+        boolean argsInputServers = !"-".equals(CommonProperties.bootstrapServers);
+        if(userInputServers){
             bootstrapServers = bootstrapServers;
-        } else if (argsNotSet && !envNotSet) {
-            bootstrapServers = defaultServer;
-        } else if (argsNotSet && envNotSet) {
+        } else if(argsInputServers){
+            bootstrapServers = bootstrapServers;
+        } else {
             System.out.println("set bootstrap servers");
             return false;
         }

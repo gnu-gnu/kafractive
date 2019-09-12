@@ -1,5 +1,6 @@
 package com.gnu.kafractive.client.admin;
 
+import com.gnu.kafractive.config.CommonProperties;
 import com.gnu.kafractive.config.ConnectEvent;
 import org.apache.kafka.clients.admin.AdminClient;
 import org.apache.kafka.clients.admin.AdminClientConfig;
@@ -14,10 +15,6 @@ import java.util.Properties;
 
 @ShellComponent
 public class AdminConnector {
-
-    @Value(value = "${bootstrap.server:-}")
-    private String defaultServer;
-
     private ApplicationEventPublisher applicationEventPublisher;
     private AdminUtils adminUtils;
 
@@ -28,13 +25,13 @@ public class AdminConnector {
 
     @ShellMethod(value="connect Brokers with admin client", key={"admin-connect"})
     public boolean connect(@ShellOption(defaultValue = "") String bootstrapServers){
-        boolean argsNotSet = "".equals(bootstrapServers);
-        boolean envNotSet = "-".equals(defaultServer);
-        if(!argsNotSet){
+        boolean userInputServers = !"".equals(bootstrapServers);
+        boolean argsInputServers = !"-".equals(CommonProperties.bootstrapServers);
+        if(userInputServers){
             bootstrapServers = bootstrapServers;
-        } else if(argsNotSet && !envNotSet){
-            bootstrapServers = defaultServer;
-        } else if(argsNotSet && envNotSet){
+        } else if(argsInputServers){
+            bootstrapServers = CommonProperties.bootstrapServers;
+        } else {
             System.out.println("set bootstrap servers");
             return false;
         }

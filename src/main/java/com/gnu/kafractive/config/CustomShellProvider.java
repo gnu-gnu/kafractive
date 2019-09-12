@@ -3,6 +3,8 @@ package com.gnu.kafractive.config;
 import com.gnu.kafractive.client.admin.AdminConnector;
 import com.gnu.kafractive.client.admin.AdminUtils;
 import com.gnu.kafractive.client.consumer.ConsumerConnector;
+import org.apache.kafka.common.metrics.KafkaMetric;
+import org.apache.kafka.common.metrics.MetricsReporter;
 import org.jline.utils.AttributedString;
 import org.jline.utils.AttributedStyle;
 import org.springframework.context.event.EventListener;
@@ -17,6 +19,7 @@ public class CustomShellProvider implements PromptProvider {
     private ConsumerConnector consumerConnector;
 
     public CustomShellProvider(AdminUtils adminUtils, AdminConnector adminConnector, ConsumerConnector consumerConnector) {
+
         this.adminUtils = adminUtils;
         this.adminConnector = adminConnector;
         this.consumerConnector = consumerConnector;
@@ -26,6 +29,10 @@ public class CustomShellProvider implements PromptProvider {
     public static final String DISCONNECTED = "disconnected";
     private String mode = "Client";
     private String connection = DISCONNECTED;
+    private String adminConnection = DISCONNECTED;
+    private String consumerConnection = DISCONNECTED;
+    private String producerConnection = DISCONNECTED;
+
 
     @Override
     public AttributedString getPrompt() {
