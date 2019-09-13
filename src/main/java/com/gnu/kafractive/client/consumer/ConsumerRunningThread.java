@@ -2,6 +2,7 @@ package com.gnu.kafractive.client.consumer;
 
 import com.gnu.kafractive.client.consumer.events.ConsumerStopEvent;
 import com.gnu.kafractive.config.ConnectEvent;
+import kafka.server.ReplicaManager;
 import org.apache.kafka.clients.consumer.Consumer;
 import org.apache.kafka.clients.consumer.ConsumerRecords;
 import org.apache.kafka.clients.consumer.KafkaConsumer;
@@ -105,11 +106,12 @@ public class ConsumerRunningThread {
                     metricName = metricNameEntry.getValue().metricName();
                     boolean filterCaptured = metricName.name().contains(filter) || metricName.group().contains(filter);
                     if (filterCaptured){
-                        System.out.printf("\n%s - %s", metricName.name(), metricNameEntry.getValue().metricValue());
-                        System.out.printf("\n\t%s", metricName.tags());
+                        // System.out.printf("\n%s - %s", metricName.name(), metricNameEntry.getValue().metricValue());
+                        // System.out.printf("\n\t%s", metricName.tags());
                     } else if("no condition".equals(filter)){
-                        System.out.printf("\n%s - %s", metricName.name(), metricNameEntry.getValue().metricValue());
+                        // System.out.printf("\n%s - %s", metricName.name(), metricNameEntry.getValue().metricValue());
                     }
+                    System.out.println(metricName.group()+" / "+metricName.name()+" / "+metricName.description());
                 }
                 return consumer;
             };

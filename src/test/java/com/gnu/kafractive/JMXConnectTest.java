@@ -117,27 +117,43 @@ public class JMXConnectTest {
         JMXServiceURL url = new JMXServiceURL("service:jmx:rmi:///jndi/rmi://192.168.0.201:19092/jmxrmi");
         JMXConnector connector = JMXConnectorFactory.connect(url);
         MBeanServerConnection mBeanServerConnection = connector.getMBeanServerConnection();
-        String name = "kafka.controller:type=KafkaController,name=ActiveControllerCount";
         // Get All names
-        for (ObjectName queryName : mBeanServerConnection.queryNames(null, null)) {
-            System.out.println(queryName.getCanonicalName());
-        }
-        System.out.println();
-        for (ObjectInstance queryMBean : mBeanServerConnection.queryMBeans(null, null)) {
-            System.out.println(queryMBean);
-        }
-        System.out.println("---");
-        MBeanInfo mBeanInfo = mBeanServerConnection.getMBeanInfo(ObjectName.getInstance(name));
-        for (MBeanAttributeInfo attribute : mBeanInfo.getAttributes()) {
-            System.out.println(attribute);
-        }
-        System.out.println("---");
-        Object value = mBeanServerConnection.getAttribute(new ObjectName(name), "Value");
-        System.out.println(value);
+        /*GetAllNames(mBeanServerConnection);
+        queryMbean(mBeanServerConnection);
+        mBeanAttr(mBeanServerConnection, name);*/
+        String activeControllerCount = "kafka.controller:type=KafkaController,name=ActiveControllerCount";
+        String underReplicatedPartitions = "kafka.server:type=ReplicaManager,name=UnderReplicatedPartitions";
+        String OfflineReplicaCount = "kafka.server:type=ReplicaManager,name=UnderReplicatedPartitions";
+        System.out.println(getJMXObject(mBeanServerConnection, activeControllerCount));
+        System.out.println(getJMXObject(mBeanServerConnection, underReplicatedPartitions));
+        System.out.println(getJMXObject(mBeanServerConnection, OfflineReplicaCount));
 
 
         connector.close();
 
 
+    }
+
+    private static Object getJMXObject(MBeanServerConnection mBeanServerConnection, String name) throws MBeanException, AttributeNotFoundException, InstanceNotFoundException, ReflectionException, IOException, MalformedObjectNameException {
+        return mBeanServerConnection.getAttribute(new ObjectName(name), "Value");
+    }
+
+    private static void mBeanAttr(MBeanServerConnection mBeanServerConnection, String name) throws InstanceNotFoundException, IntrospectionException, ReflectionException, IOException, MalformedObjectNameException {
+        MBeanInfo mBeanInfo = mBeanServerConnection.getMBeanInfo(ObjectName.getInstance(name));
+        for (MBeanAttributeInfo attribute : mBeanInfo.getAttributes()) {
+            System.out.println(attribute);
+        }
+    }
+
+    private static void queryMbean(MBeanServerConnection mBeanServerConnection) throws IOException {
+        for (ObjectInstance queryMBean : mBeanServerConnection.queryMBeans(null, null)) {
+            System.out.println(queryMBean);
+        }
+    }
+
+    private static void GetAllNames(MBeanServerConnection mBeanServerConnection) throws IOException {
+        for (ObjectName queryName : mBeanServerConnection.queryNames(null, null)) {
+            System.out.println(queryName.getCanonicalName());
+        }
     }
 }

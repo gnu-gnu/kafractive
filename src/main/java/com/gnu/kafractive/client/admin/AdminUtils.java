@@ -1,5 +1,6 @@
 package com.gnu.kafractive.client.admin;
 
+import kafka.server.ReplicaManager;
 import org.apache.kafka.clients.admin.*;
 import org.apache.kafka.common.KafkaFuture;
 import org.apache.kafka.common.Node;
@@ -222,7 +223,6 @@ public class AdminUtils {
 
         }
     }
-
 
     private String getBrokerMetricByMetricName(String brokerId, String configPropertyName) throws ExecutionException, InterruptedException, NoSuchFieldException {
         ConfigResource resource = new ConfigResource(ConfigResource.Type.BROKER, brokerId);
