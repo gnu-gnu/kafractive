@@ -65,6 +65,16 @@
     <build>
         <plugins>
             <plugin>
+                <groupId>com.google.cloud.tools</groupId>
+                <artifactId>jib-maven-plugin</artifactId>
+                <version>1.6.1</version>
+                <configuration>
+                    <to>
+                        <image>registry.hub.docker.com/webfuel/kafractive-test</image>
+                    </to>
+                </configuration>
+            </plugin>
+            <plugin>
                 <groupId>org.springframework.boot</groupId>
                 <artifactId>spring-boot-maven-plugin</artifactId>
             </plugin>
