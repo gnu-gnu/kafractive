@@ -25,7 +25,7 @@
     </developers>
 
     <scm>
-        <url></url>
+        <url>https://github.com/gnu-gnu/kafractive.git</url>
     </scm>
 
     <properties>
